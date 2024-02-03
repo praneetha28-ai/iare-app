@@ -54,6 +54,9 @@ dependencies:
   mime: ^1.0.4
   intl:
   google_fonts:
+  firebase_auth:
+  google_sign_in:
+  firebase_analytics:
 
 dev_dependencies:
   flutter_test:

@@ -1,11 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eraser/eraser.dart';
 import 'package:expandable_text/expandable_text.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:google_sign_in/widgets.dart';
 import 'package:iare/admin.dart';
 import 'package:iare/adminLogin.dart';
 import 'package:iare/detailedPost.dart';
@@ -14,6 +18,7 @@ import 'package:linkwell/linkwell.dart';
 import 'constants.dart';
 import 'dataContainer.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_analytics/observer.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -22,10 +27,12 @@ class HomeScreen extends StatefulWidget {
   // String category;
   String year;
   String uName;
-  HomeScreen({Key? key,required this.year,required this.uName}) : super(key: key);
+  FirebaseAnalytics firebaseAnalytics;
+  FirebaseAnalyticsObserver firebaseAnalyticsObserver;
+  HomeScreen({Key? key,required this.year,required this.uName,required this.firebaseAnalytics,required this.firebaseAnalyticsObserver}) : super(key: key);
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState(year,uName);
+  State<HomeScreen> createState() => _HomeScreenState(year,uName,firebaseAnalytics,firebaseAnalyticsObserver);
 }
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -34,7 +41,9 @@ class _HomeScreenState extends State<HomeScreen> {
   // late String category;
   String year;
   String uName;
-  _HomeScreenState(this.year,this.uName,);
+  FirebaseAnalytics firebaseAnalytics;
+  FirebaseAnalyticsObserver firebaseAnalyticsObserver;
+  _HomeScreenState(this.year,this.uName,this.firebaseAnalytics,this.firebaseAnalyticsObserver);
   String head = "Exams";
 
   void initState() {
@@ -72,19 +81,30 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('A new message ');
-      RemoteNotification? notification = message.notification;
-      AndroidNotification? android = message.notification?.android;
-      if (notification != null && android != null) {
-        Navigator.of(context).push(MaterialPageRoute(
-            builder: (context) => HomeScreen(
-              year: year,
-              uName: uName,
-            )));
-      }
+      // print('A new message ');
+      // RemoteNotification? notification = message.notification;
+      // AndroidNotification? android = message.notification?.android;
+      // if (notification != null && android != null) {
+      //   Navigator.of(context).push(MaterialPageRoute(
+      //       builder: (context) => HomeScreen(
+      //         year: year,
+      //         uName: uName,
+      //
+      //       )));
+      // }
       Eraser.clearAllAppNotifications();
 
     });
+  }
+  void logCategorySelectionEvent(String categoryName) {
+    firebaseAnalytics.logEvent(
+      name: 'category_selection',
+      parameters: {
+        'category_name': categoryName,
+        'user_id': uName,
+        'timestamp': DateTime.now().toIso8601String(),
+      },
+    );
   }
 
   Widget CategoriesScroll() {
@@ -111,6 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: (){
                 setState(() {
                   head="exams";
+                  logCategorySelectionEvent("Exams");
                 });
               },
             ),
@@ -129,6 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: (){
                 setState(() {
                   head="bus";
+                  logCategorySelectionEvent("Bus");
                 });
               },
             ),
@@ -146,6 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: (){
                 setState(() {
                   head="events";
+                  logCategorySelectionEvent("Events");
                 });
               },
             ),
@@ -163,6 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: (){
                 setState(() {
                   head="misc";
+                  logCategorySelectionEvent("Misc");
                 });
               },
             ),
@@ -180,6 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: (){
                 setState(() {
                   head="placements";
+                  logCategorySelectionEvent("Placements");
                 });
               },
             ),
@@ -188,6 +213,18 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
 }
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+
+  Future<void> _signOut() async {
+    try {
+      await _googleSignIn.signOut(); // Sign out from Google
+      await _auth.signOut(); // Sign out from Firebase
+      print("User signed out");
+    } catch (e) {
+      print("Error signing out: $e");
+    }
+  }
 
 Widget Header(){
     return Row(
@@ -195,9 +232,11 @@ Widget Header(){
       children: [
         InkWell(
             onTap: (){
-              Navigator.of(context).push(MaterialPageRoute(builder: (context)=>MyHomePage()));
+            _signOut();
             },
-            child: CircleAvatar(radius: 30,backgroundColor: Colors.white,child: Image.asset("assets/images/logo_1.jpg",width: 35,height: 35,),)),
+            child: CircleAvatar(radius: 30,backgroundColor: Colors.white,
+              child: Image.asset("assets/images/logo_1.jpg",width: 35,height: 35,),)
+        ),
         if (year=='year_1')
           Text("I B.TECH",style: GoogleFonts.plusJakartaSans(fontSize: 20),)
         else if (year=='year_2')
@@ -209,19 +248,19 @@ Widget Header(){
         ,
         InkWell(
             // onTap: (){
-            //   Navigator.of(context).push(MaterialPageRoute(builder: (context)=>AdminLogin()));
+            //   Navigator.of(context).push(MaterialPageRoute(builder: (context)=>MyHomePage()));
             // },
             child: Container(
-              decoration:const BoxDecoration(
-                  gradient: LinearGradient(
-                      colors: [
-                        Color(0xffD0DDFF),
-                        Color(0xffF0F4FF),
-                      ]
+                decoration:const BoxDecoration(
+                gradient: LinearGradient(
+                    colors: [
+                      Color(0xffD0DDFF),
+                      Color(0xffF0F4FF),
+                    ]
                   )
-              ),
+                ),
             )
-        )
+        ),
       ],
     );
 }
@@ -231,6 +270,12 @@ Widget Header(){
   Widget build(BuildContext context) {
     print("helloo");
     // print(FirebaseFirestore.instance.collection("year_1").doc().collection("bus").doc().path);
+    firebaseAnalytics.logEvent(
+        name: 'screen_view',
+        parameters: {
+      'screen_name': 'home',
+          'user':uName
+    });
    return Scaffold(
      body: SingleChildScrollView(
        physics: ScrollPhysics(),
@@ -262,8 +307,8 @@ Widget Header(){
                ),
                Container(
                  height: MediaQuery.of(context).size.height/1.5,
-
                  child: StreamBuilder(
+
                    stream: FirebaseFirestore.instance
                        .collection(year)
                        .doc(head.toLowerCase()=="misc"?"others":head.toLowerCase())

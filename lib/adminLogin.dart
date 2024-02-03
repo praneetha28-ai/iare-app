@@ -27,6 +27,10 @@ class _AdminLoginState extends State<AdminLogin> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: IconButton(onPressed: (){
+          Navigator.of(context).pop();
+        },icon: Icon(Icons.arrow_back_ios,color: Colors.white,),),
         backgroundColor: Color(0xff2B3467),
         title: Text("Administrator Login",style: TextStyle(color: Colors.white),),
       ),

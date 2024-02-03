@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/services.dart';
 import 'dataContainer.dart';
 import 'dataContainerAdmin.dart';
+import 'detailedPost.dart';
 
 
 class CategoryScreen extends StatefulWidget {
@@ -70,7 +71,170 @@ class _CategoryState extends State<CategoryScreen> {
     // });
   }
 
+  void showDeleteDialog(BuildContext context,QueryDocumentSnapshot value,TabController tabController) {
+    // Add your delete confirmation dialog logic here
+    // You can use the existing `showAlertDialog` function with necessary modifications
+      // set up the buttons
+      Widget cancelButton = ElevatedButton(
 
+        style: ElevatedButton.styleFrom(
+            backgroundColor: Color(0xffECF2FF),
+            elevation: null,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)
+            )
+        ),
+        child: Text("Cancel",style: TextStyle(color: Color(0xff282c79)),),
+        onPressed:  () {
+
+          Navigator.of(context).pop();
+          // Navigator.of(context).pop();
+        },
+      );
+      Widget continueButton = ElevatedButton(
+        style: ElevatedButton.styleFrom(
+            backgroundColor: Color(0xff282c79),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)
+            )
+        ),
+        child: Text("Delete",style: TextStyle(color: Colors.white),),
+        onPressed:  () {
+          print(value.id);
+          print(year);
+          Navigator.of(context).pop();
+          FirebaseFirestore
+              .instance.collection(year)
+              .doc(tabs[tabController.index].text!.toLowerCase())
+              .collection("notifications").doc(value.id).delete().whenComplete(() =>print("deleted"));
+        },
+      );
+      // set up the AlertDialog
+      AlertDialog alert = AlertDialog(
+        backgroundColor: Color(0xffECF2FF),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text("Confirm Delete"),
+        content: Text("Would you like to delete this message ?"),
+        actions: [
+          cancelButton,
+          continueButton,
+        ],
+      );
+      // show the dialog
+      showDialog(
+        barrierDismissible: false,
+        context: context,
+        builder: (BuildContext context) {
+          return alert;
+        },
+      );
+
+  }
+
+  void showEditDialog(BuildContext context, QueryDocumentSnapshot value,TabController tabController) {
+    TextEditingController titleControl =
+    TextEditingController(text: value['title']);
+    TextEditingController messageControl =
+    TextEditingController(text: value['message']);
+    // Add your edit dialog logic here
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        // Your edit dialog content
+        return AlertDialog(
+          title: Text("Edit"),
+          content: Column(
+            children: [
+              TextField(
+                controller: titleControl,
+                decoration: InputDecoration(labelText: "Title"),
+              ),
+              TextField(
+                controller: messageControl,
+                decoration: InputDecoration(labelText: 'message'),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                // Handle the editing logic
+                FirebaseFirestore
+                    .instance.collection(year)
+                    .doc(tabs[tabController.index].text!.toLowerCase())
+                    .collection("notifications").doc(value.id).update({'title':titleControl.text,'message':messageControl.text});
+                Navigator.of(context).pop();
+              },
+              child: Text('Save'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  Widget slideRight() {
+    return Container(
+      color: Colors.green,
+      child: Align(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
+            SizedBox(
+              width: 20,
+            ),
+            Icon(
+              Icons.edit,
+              color: Colors.white,
+            ),
+            Text(
+              " Edit",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.left,
+            ),
+          ],
+        ),
+        alignment: Alignment.centerLeft,
+      ),
+    );
+  }
+
+  Widget slideLeft() {
+    return Container(
+      color: Colors.red,
+      child: Align(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: <Widget>[
+            Icon(
+              Icons.delete,
+              color: Colors.white,
+            ),
+            Text(
+              " Delete",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.right,
+            ),
+            SizedBox(
+              width: 20,
+            ),
+          ],
+        ),
+        alignment: Alignment.centerRight,
+      ),
+    );
+  }
 
   List<Tab> tabs = <Tab>[
     Tab(
@@ -181,95 +345,85 @@ class _CategoryState extends State<CategoryScreen> {
                               else{
                                 out_date="Today";
                               }
-                              return Card(
-                                elevation: 5,
-                                margin: EdgeInsets.all(8),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                                    color: Colors.white,
-                                  ),
-                                  child: ListTile(
-                                    onTap: (){
+                              return Dismissible(
+                                key: Key(value.id), // Use a unique key for each item
+                                direction: DismissDirection.horizontal,
 
-                                      showAlertDialog(BuildContext context) {
-                                        // set up the buttons
-                                        Widget cancelButton = ElevatedButton(
-
-                                          style: ElevatedButton.styleFrom(
-                                              backgroundColor: Color(0xffECF2FF),
-                                              elevation: null,
-                                              shape: RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.circular(10)
-                                              )
-                                          ),
-                                          child: Text("Cancel",style: TextStyle(color: Color(0xff282c79)),),
-                                          onPressed:  () {
-
-                                            Navigator.of(context).pop();
-                                            // Navigator.of(context).pop();
-                                          },
-                                        );
-                                        Widget continueButton = ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                              backgroundColor: Color(0xff282c79),
-                                              shape: RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.circular(10)
-                                              )
-                                          ),
-                                          child: Text("Delete",style: TextStyle(color: Colors.white),),
-                                          onPressed:  () {
-                                            print(value.id);
-                                            print(year);
-                                            Navigator.of(context).pop();
-                                            FirebaseFirestore
-                                                .instance.collection(year)
-                                                .doc(tabs[tabController.index].text!.toLowerCase())
-                                                .collection("notifications").doc(value.id).delete().whenComplete(() =>print("deleted"));
-                                          },
-                                        );
-                                        // set up the AlertDialog
-                                        AlertDialog alert = AlertDialog(
-                                          backgroundColor: Color(0xffECF2FF),
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                          title: Text("Confirm Delete"),
-                                          content: Text("Would you like to delete this message ?"),
-                                          actions: [
-                                            cancelButton,
-                                            continueButton,
-                                          ],
-                                        );
-                                        // show the dialog
-                                        showDialog(
-                                          barrierDismissible: false,
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            return alert;
-                                          },
-                                        );
-                                      }
-                                      showAlertDialog(context);
-                                    },
-                                    // trailing: Text(out_date),
-                                    title: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text('Admin',maxLines: 1,style: TextStyle(fontWeight: FontWeight.w600),),
-                                        Text(out_date,style: TextStyle(fontSize: 12),),
-
-                                      ],
+                                confirmDismiss: (direction) async {
+                                  if (direction == DismissDirection.endToStart) {
+                                    final bool res = await showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return AlertDialog(
+                                            content: Text(
+                                                "Are you sure you want to delete ?"),
+                                            actions: <Widget>[
+                                              ElevatedButton(
+                                                child: Text(
+                                                  "Cancel",
+                                                  style: TextStyle(color: Colors.black),
+                                                ),
+                                                onPressed: () {
+                                                  Navigator.of(context).pop(false);
+                                                  // Navigator.of(context).pop();
+                                                },
+                                              ),
+                                              ElevatedButton(
+                                                child: Text(
+                                                  "Delete",
+                                                  style: TextStyle(color: Colors.red),
+                                                ),
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                  FirebaseFirestore
+                                                      .instance.collection(year)
+                                                      .doc(tabs[tabController.index].text!.toLowerCase())
+                                                      .collection("notifications").doc(value.id).delete().whenComplete(() =>print("deleted"));
+                                                },
+                                              ),
+                                            ],
+                                          );
+                                        });
+                                    return res;
+                                  } else {
+                                    // TODO: Navigate to edit page;
+                                    showEditDialog(context, value,tabController);
+                                  }
+                                },
+                                background: slideRight(),
+                                secondaryBackground: slideLeft(),
+                                child: Card(
+                                  elevation: 5,
+                                  margin: EdgeInsets.all(8),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.all(Radius.circular(8)),
+                                      color: Colors.white,
                                     ),
-                                    subtitle: Column(
-                                      mainAxisAlignment: MainAxisAlignment.start,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(value['title'],maxLines: 1,style: TextStyle(fontWeight: FontWeight.w400),),
-                                        Text(value['message'],maxLines: 1,style: TextStyle(fontWeight: FontWeight.w300),),
-                                      ],
+                                    child: ListTile(
+                                      onTap: () {
+                                        Navigator.of(context).push(MaterialPageRoute(builder: (context)=>PostDetail(details: value)));
+                                      },
+                                      title: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text('Admin', maxLines: 1, style: TextStyle(fontWeight: FontWeight.w600)),
+                                          Text(out_date, style: TextStyle(fontSize: 12)),
+                                        ],
+                                      ),
+                                      subtitle: Column(
+                                        mainAxisAlignment: MainAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(value['title'], maxLines: 1, style: TextStyle(fontWeight: FontWeight.w400)),
+                                          Text(value['message'], maxLines: 1, style: TextStyle(fontWeight: FontWeight.w300)),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
                               );
+
                             }),
                       );
                     },
